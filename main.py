@@ -21,17 +21,12 @@ INVALID_MATRIX_2 = [
 ]
 
 
-class Matrix:
+class LinearEquationSystem:
 
     def __init__(self, n):
         self.n = n
-        self.elements = []
+        self.elements = self.generate_matrix(self.n)
         self.result = [0,] * self.n
-
-        for row in range(n):
-            self.elements.append([])
-            for column in range(n):
-                self.elements[row].append(0)
 
     @staticmethod
     def generate_matrix(n):
@@ -79,9 +74,9 @@ class Matrix:
         Rotate matrix 180 degrees. Results' order will also be reversed.
         """
         tr_result = self.generate_matrix(self.n)
-        for row, r_row in zip(range(self.n), range(self.n)[::-1]):
-            for column, r_column in zip(range(self.n), range(self.n)[::-1]):
-                tr_result[r_row][r_column] = self.elements[row][column]
+        for row, reversed_row in zip(range(self.n), range(self.n)[::-1]):
+            for column, reversed_column in zip(range(self.n), range(self.n)[::-1]):
+                tr_result[reversed_row][reversed_column] = self.elements[row][column]
 
         self.elements = tr_result
         self.result = self.result[::-1]
@@ -128,14 +123,14 @@ class Matrix:
 
 
 if __name__ == '__main__':
-    a = Matrix(3)
-    a.input_from_list(MATRIX)
-    a.output('↓')
+    system = LinearEquationSystem(3)
+    system.input_from_list(MATRIX)
+    system.output('↓')
     try:
-        a.solve_system()
+        system.solve_system()
     except ZeroDivisionError:  # will occur if the system is not solvable
         print('układ jest sprzeczny')
         exit(1)
 
-    a.output()
-    a.print_results()
+    system.output()
+    system.print_results()

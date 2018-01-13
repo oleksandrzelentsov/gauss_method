@@ -85,18 +85,6 @@ class LinearEquationSystem:
 
         print(end_with.center(44, ' '))  # made to display an arrow in the middle of the screen
 
-    def rotate(self):  # TODO remove
-        """
-        Rotate matrix 180 degrees. Results' order will also be reversed.
-        """
-        tr_result = self.generate_matrix(self.n)
-        for row, reversed_row in zip(range(self.n), range(self.n)[::-1]):
-            for column, reversed_column in zip(range(self.n), range(self.n)[::-1]):
-                tr_result[reversed_row][reversed_column] = self.elements[row][column]
-
-        self.elements = tr_result
-        self.result = self.result[::-1]
-
     def _make_zeroes(self):
         """
         Make zeroes in matrix under each element on a diagonal line, using elementary matrix transformations.
@@ -185,9 +173,9 @@ if __name__ == '__main__':
     system.output()
     system.print_results()
 
-    print('sprawdzam czy to jest poprawne rozwiązanie....', end='')
+    print('sprawdzam czy to jest poprawne rozwiązanie: ', end='')
 
     if system_.check_solutions(system.result):
-        print('poprawnie ✓')
+        print('poprawne ✓')
     else:
-        print('NIEpoprawnie ✗')
+        print('niepoprawne ✗')

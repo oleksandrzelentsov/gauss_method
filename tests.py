@@ -1,7 +1,11 @@
 import unittest
 from copy import deepcopy
 
-from main import GaussLinearEquationSystem, GaussWithOrderingEquationSystem
+from decimal import Decimal, InvalidOperation, DivisionByZero, getcontext
+
+from main import GaussLinearEquationSystem, GaussWithOrderingEquationSystem, PRECISION
+
+getcontext().prec = PRECISION
 
 
 class GaussLinearEquationSystemUnitTest(unittest.TestCase):
@@ -70,7 +74,7 @@ class GaussLinearEquationSystemUnitTest(unittest.TestCase):
         self.assertTrue(system_.check_solutions(system.get_ordered_solutions()))
         if solutions is not None:
             for a, b in zip(system.get_ordered_solutions(), solutions):
-                self.assertAlmostEqual(a, b)
+                self.assertAlmostEqual(Decimal(a), Decimal(b))
 
     def test_solve_system(self):
         for i, (matrix, solutions) in enumerate(self.MATRICES_ANSWERS):
@@ -82,7 +86,7 @@ class GaussLinearEquationSystemUnitTest(unittest.TestCase):
             with self.subTest(i=i):
                 system = GaussLinearEquationSystem()
                 system.input_from_list(matrix)
-                with self.assertRaises(ZeroDivisionError):
+                with self.assertRaises((InvalidOperation, DivisionByZero)):
                     system.solve_system()
 
 

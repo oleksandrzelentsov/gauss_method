@@ -1,10 +1,31 @@
 from copy import deepcopy
-from itertools import permutations
 from sys import exit
+
+from decimal import Decimal, getcontext
+
+PRECISION = 32
+
+
+def input_safely(prompt: str = '', type_: type = str, validators=None):
+    if validators is None:
+        validators = []
+
+    result = None
+    while result is None:
+        try:
+            result = type_(input(prompt))
+        except (ValueError, TypeError):
+            continue
+
+        for validator in validators:
+            if not validator(result):
+                result = None
+
+    return result
 
 
 class GaussLinearEquationSystem:
-    EPSILON = 1e-6
+    EPSILON = Decimal("1e-{}".format(PRECISION - 2))
 
     def __init__(self, n=None):
         self._matrix = None
@@ -28,17 +49,6 @@ class GaussLinearEquationSystem:
         return self._free_members
 
     @staticmethod
-    def _input_number(prompt: str = '', type_: type = str):
-        result = None
-        while result is None:
-            try:
-                result = type_(input(prompt))
-            except (ValueError, TypeError):
-                continue
-
-        return result
-
-    @staticmethod
     def generate_matrix(n: int):
         """
         Generate square matrix of given order.
@@ -52,25 +62,27 @@ class GaussLinearEquationSystem:
         for row in range(n):
             elements.append([])
             for column in range(n):
-                elements[row].append(0)
+                elements[row].append(Decimal(0))
 
         return elements
 
     def input(self):
-        self.n = self._input_number('ilość zmiennych: ', int)
+        self.n = input_safely('ilość zmiennych: ', int, validators=[
+            lambda n: n > 1,
+        ])
         for row in range(self.n):
             for column in range(self.n):
-                self._matrix[row][column] = self._input_number('A[{},{}]: '.format(row + 1, column + 1), float)
+                self._matrix[row][column] = input_safely('A[{},{}]: '.format(row + 1, column + 1), Decimal)
 
-            self._free_members[row] = self._input_number('B[{}]: '.format(row + 1), float)
+            self._free_members[row] = input_safely('B[{}]: '.format(row + 1), Decimal)
 
     def input_from_list(self, matrix: list):  # used for testing
         self.n = len(matrix)
         for row in range(self.n):
             for column in range(self.n):
-                self._matrix[row][column] = matrix[row][column]
+                self._matrix[row][column] = Decimal(matrix[row][column])
 
-            self._free_members[row] = matrix[row][self.n]
+            self._free_members[row] = Decimal(matrix[row][self.n])
 
     def output(self, end_with: str = ''):
         for row in range(self.n):
@@ -100,13 +112,13 @@ class GaussLinearEquationSystem:
 
     def _reverse_act(self):
         for row in list(range(self.n))[::-1]:
-            diagonal_element = self._matrix[row][row]
+            diagonal_element = Decimal(self._matrix[row][row])
 
-            left_part = 0
+            left_part = Decimal(0)
             for column in range(row, self.n):
                 if row != column:
                     left_part += self._matrix[row][column] * self._free_members[column]
-                    self._matrix[row][column] = 0
+                    self._matrix[row][column] = Decimal(0)
                 else:
                     self._matrix[row][row] /= diagonal_element
 
@@ -129,39 +141,41 @@ class GaussLinearEquationSystem:
         Pretty-print the results. To be called when the system is actually solved.
         """
         for i, solution in enumerate(self._free_members):
-            if not float(solution).is_integer():
-                solution = '{} / {}'.format(*float(solution).as_integer_ratio())
+            numerator, denominator = solution.as_integer_ratio()
+            if len(str(numerator)) > 4:
+                pass
             else:
-                solution = int(solution)
+                if denominator != 1:
+                    solution = '{} / {}'.format(numerator, denominator)
+                else:
+                    solution = int(solution)
 
             print('x{} = {}'.format(i + 1, solution))
 
         print()
 
-    def check_solutions(self, unknowns: list):
+    def check_solutions(self, solutions: list):
         """
         Check if a particular solution is correct.
 
-        :param list unknowns:
+        :param list solutions:
         """
         row_check_results = []
-        for particular_solution_set in permutations(unknowns):
-            row_check_results.clear()
-            for row, right_part in zip(self._matrix, self._free_members):
-                left_part = 0
-                for element, solution in zip(row, particular_solution_set):
-                    left_part += element * solution
+        for row, right_part in zip(self._matrix, self._free_members):
+            left_part = Decimal(0)
+            for element, solution in zip(row, solutions):
+                left_part += element * solution
 
-                row_check_results.append(abs(left_part - right_part) < self.EPSILON)
+            row_check_results.append(abs(left_part - right_part) < self.EPSILON)
 
-            if all(row_check_results):
-                return True
+        if all(row_check_results):
+            return True
 
         return False
 
     def _update_instance(self):
         self._matrix = self.generate_matrix(self.n)
-        self._free_members = [0] * self.n
+        self._free_members = [Decimal(0)] * self.n
 
     def _transpose(self):
         new_one = self.generate_matrix(self.n)
@@ -181,15 +195,9 @@ class GaussWithOrderingEquationSystem(GaussLinearEquationSystem):
         super()._update_instance()
         self._free_members_indices = list(range(self.n))
 
-    def _make_zeroes(self):
-        for step in range(self.n - 1):
-            self._swap_rows_for_max_element_indices(step)
-            for row in range(step + 1, self.n):
-                coefficient = self._matrix[row][step] / self._matrix[step][step]
-                for column in range(step, self.n):
-                    self._matrix[row][column] -= (coefficient * self._matrix[step][column])
-
-                self._free_members[row] -= coefficient * self._free_members[step]
+    def _make_zeroes_under(self, diagonal_index):
+        self._swap_rows_for_max_element_indices(diagonal_index)
+        super()._make_zeroes_under(diagonal_index)
 
     def _maximum_element_indices(self, step: int):
         max_i = 0
@@ -226,8 +234,8 @@ class GaussWithOrderingEquationSystem(GaussLinearEquationSystem):
         return [self._free_members[i] for i in self._free_members_indices]
 
 
-if __name__ == '__main__':
-    system = GaussLinearEquationSystem()
+def main(matrix_class):
+    system = matrix_class()
     system.input()
     system_ = deepcopy(system)
     system.output('↓')
@@ -246,3 +254,28 @@ if __name__ == '__main__':
         print('poprawne ✓')
     else:
         print('niepoprawne ✗')
+
+
+if __name__ == '__main__':
+    getcontext().prec = PRECISION
+
+    methods = [
+        {
+            'name': 'Zwykła metoda Gaussa',
+            'class': GaussLinearEquationSystem
+        },
+        {
+            'name': 'Metoda Gaussa z wyszukiwaniem elementu maksymalnego',
+            'class': GaussWithOrderingEquationSystem,
+        },
+    ]
+    for i, method in enumerate(methods):
+        print('{i:2d}. {name}'.format(
+            i=i + 1,
+            **method,
+        ))
+
+    method_index = input_safely('wybierz metodę: ', int, validators=[
+        lambda n: (1 <= n <= len(methods)),
+    ])
+    main(methods[method_index - 1]['class'])

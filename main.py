@@ -1,7 +1,7 @@
 from copy import deepcopy
 from sys import exit
 
-from decimal import Decimal, getcontext
+from decimal import Decimal, getcontext, DivisionByZero, InvalidOperation
 
 PRECISION = 16
 
@@ -242,7 +242,7 @@ def main(matrix_class):
     system.output('↓')
     try:
         system.solve_system()
-    except ZeroDivisionError:  # will occur if the system is not solvable
+    except (InvalidOperation, DivisionByZero):  # will occur if the system is not solvable
         print('układ jest sprzeczny')
         exit(1)
 

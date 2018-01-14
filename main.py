@@ -26,6 +26,7 @@ def input_safely(prompt: str = '', type_: type = str, validators=None):
 
 class GaussLinearEquationSystem:
     EPSILON = Decimal("1e-{}".format(PRECISION - 2))
+    MAX_FRACTION_DIGITS = 10
 
     def __init__(self, n=None):
         self._matrix = None
@@ -140,17 +141,17 @@ class GaussLinearEquationSystem:
         """
         Pretty-print the results. To be called when the system is actually solved.
         """
-        for i, solution in enumerate(self._free_members):
+        for solution_number, solution in enumerate(self._free_members):
             numerator, denominator = solution.as_integer_ratio()
-            if len(str(numerator)) > 4:
-                pass
+            if len(str(numerator)) > self.MAX_FRACTION_DIGITS or len(str(denominator)) > self.MAX_FRACTION_DIGITS:
+                print('x{} ≈ {:.3f}'.format(solution_number + 1, solution))
             else:
                 if denominator != 1:
                     solution = '{} / {}'.format(numerator, denominator)
                 else:
                     solution = int(solution)
 
-            print('x{} = {}'.format(i + 1, solution))
+                print('x{} = {}'.format(solution_number + 1, solution))
 
         print()
 

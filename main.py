@@ -3,7 +3,7 @@ from sys import exit
 
 from decimal import Decimal, getcontext
 
-PRECISION = 32
+PRECISION = 16
 
 
 def input_safely(prompt: str = '', type_: type = str, validators=None):

@@ -15,24 +15,23 @@ class CholeskiLinearEquationSystem(GaussLinearEquationSystem):
         for s in range(L.n):
             for i in range(s, L.n):
                 if s == i:
-                    L._matrix[s][s] = sqrt(
-                        self._matrix[s][s] - sum([
-                            self._matrix[s][j] ** 2
-                            for j in range(s - 2)
+                    L._matrix[s][s] = sqrt(self._matrix[s][s] - sum([
+                        L._matrix[s][j] ** 2
+                        for j in range(s)
                         ])
                     )
                 else:
                     L._matrix[i][s] = (
                         self._matrix[i][s] - sum([
-                            (self._matrix[i][j] * self._matrix[s][j])
-                            for j in range(s - 2)
+                            (L._matrix[i][j] * L._matrix[s][j])
+                            for j in range(s)
                         ])
                     ) / L._matrix[s][s]
 
         Lt = deepcopy(L)
         Lt.transpose()
 
-        L._free_members = self.get_ordered_solutions()
+        L._free_members = deepcopy(self.get_ordered_solutions())
         L._reverse_act(to_upper_triangular=False)
 
         Lt._free_members = deepcopy(L.get_ordered_solutions())
@@ -43,7 +42,7 @@ class CholeskiLinearEquationSystem(GaussLinearEquationSystem):
         if self._choleski_solutions is not None:
             self.print_math_results(self._choleski_solutions)
         else:
-            raise ValueError('system nie jest do końca rozwiązany')
+            raise ValueError('układ nie jest do końca rozwiązany')
 
     def get_ordered_solutions(self):
         if self._choleski_solutions is not None:
